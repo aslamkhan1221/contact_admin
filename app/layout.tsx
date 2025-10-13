@@ -18,7 +18,7 @@ export default function RootLayout({
 
         <aside className={`w-64 ${sidebar ? "" : "hidden"} bg-white shadow-md `}>
 
-          <div className="p-4 font-bold text-lg border-b">My Sidebar</div>
+          <div className="p-4 font-bold text-lg border-b">Contact Admin</div>
           <nav className="p-4">
             <ul className="space-y-2 ">
               <li>
