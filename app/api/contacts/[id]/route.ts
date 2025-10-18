@@ -3,7 +3,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '../../../lib/db';
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+// ----------------- GET -----------------
+export async function GET(request: NextRequest, { params }: any) {
   try {
     const { id } = params;
 
@@ -23,7 +24,8 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
   }
 }
 
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+// ----------------- PUT -----------------
+export async function PUT(request: NextRequest, { params }: any) {
   try {
     const { id } = params;
     const contactId = parseInt(id, 10);
@@ -73,10 +75,6 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
       args: [contactId],
     });
 
-    if (updatedRows.length === 0) {
-      return NextResponse.json({ message: `Contact with id ${id} not found after update` }, { status: 404 });
-    }
-
     return NextResponse.json(updatedRows[0]);
   } catch (error) {
     console.error('Failed to update contact:', error);
@@ -84,12 +82,12 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+// ----------------- DELETE -----------------
+export async function DELETE(request: NextRequest, { params }: any) {
   try {
     const { id } = params;
     const contactId = parseInt(id, 10);
 
-    // Check if contact exists before deleting
     const { rows: existingRows } = await db.execute({
       sql: 'SELECT * FROM contacts WHERE id = ?',
       args: [contactId],
