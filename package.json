@@ -7,7 +7,8 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "migrate": "node migrate.js"
   },
   "repository": {
     "type": "git",
@@ -21,6 +22,7 @@
   },
   "homepage": "https://github.com/aslamkhan1221/contact_admin#readme",
   "dependencies": {
+    "@libsql/client": "^0.15.15",
     "@tailwindcss/postcss": "^4.1.14",
     "datatables.net-dt": "^2.3.4",
     "datatables.net-react": "^1.0.1",
@@ -29,12 +31,15 @@
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-icons": "^5.5.0",
+    "swr": "^2.3.6",
     "tailwindcss": "^4.1.14",
-    "vite": "^7.1.9"
+    "vite": "^7.1.9",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@types/node": "24.7.2",
     "@types/react": "19.2.2",
+    "dotenv": "^17.2.3",
     "typescript": "5.9.3"
   }
 }
