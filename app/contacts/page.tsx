@@ -1,6 +1,12 @@
 'use client';
 
 import { useState, useEffect, ChangeEvent, FormEvent, useRef } from 'react';
+import $ from 'jquery';
+import DataTable from 'datatables.net-react';
+import DataTables from 'datatables.net-dt';
+import 'datatables.net-dt/css/dataTables.dataTables.css';
+import 'datatables.net-responsive-dt/css/responsive.dataTables.css';
+import 'datatables.net-select-dt/css/select.dataTables.css';
 import { FaEdit, FaTrash } from 'react-icons/fa';
 
 interface Contact {
@@ -32,6 +38,8 @@ interface ManualConflict {
   new: Contact;
   duplicate: Contact;
 }
+
+DataTable.use(DataTables);
 
 export default function Page() {
   const [contacts, setContacts] = useState<Contact[]>([]);
@@ -71,6 +79,18 @@ export default function Page() {
     }
   };
 
+  // Wrapper functions to be exposed to the window object
+  const handleOpenDialogWrapper = (id: number) => {
+    const contact = contacts.find(c => c.id === id);
+    if (contact) {
+      handleOpenDialog(contact);
+    }
+  };
+
+  const handleDeleteWrapper = (id: number) => {
+    handleDelete(id);
+  };
+
   useEffect(() => {
     fetchContacts();
   }, []);
@@ -78,6 +98,16 @@ export default function Page() {
   const clearErrors = () => {
     setErrors({});
   };
+
+  useEffect(() => {
+    // Expose functions to the window object for DataTables render function
+    (window as any).handleOpenDialogWrapper = handleOpenDialogWrapper;
+    (window as any).handleDeleteWrapper = handleDeleteWrapper;
+    return () => {
+      delete (window as any).handleOpenDialogWrapper;
+      delete (window as any).handleDeleteWrapper;
+    };
+  }, [contacts]); // Re-bind if contacts change
 
   const clearFormData = () => {
     setFormData({
@@ -312,8 +342,39 @@ export default function Page() {
     fileInputRef.current?.click();
   };
 
+  const columns = [
+    { title: 'Name', data: 'name' },
+    { title: 'Email', data: 'email' },
+    { title: 'Phone', data: 'phone' },
+    { title: 'WhatsApp', data: 'whatsapp' },
+    { title: 'Address', data: 'address' },
+    { title: 'Tags', data: 'tags' },
+    {
+      title: 'Actions',
+      data: null, // We are not binding to a single property
+      render: (data: any, type: any, row: Contact) => {
+        // The `row` parameter contains the full data object for the current row
+        return `
+          <button class="text-blue-500 hover:text-blue-700 mr-2" onclick="window.handleOpenDialogWrapper(${row.id})">
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z"></path><path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd"></path></svg>
+          </button>
+          <button class="text-red-500 hover:text-red-700" onclick="window.handleDeleteWrapper(${row.id})">
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"></path></svg>
+          </button>
+        `;
+      },
+      className: 'dt-body-center',
+    },
+  ];
+
   return (
-    <div>
+    <div className="container mx-auto p-4">
+      <style>{`
+        .dt-input {
+          margin-right: 1rem;
+        }
+      `}</style>
+
       <div className="d-flex justify-content-space-evenly">
         <h1 className="text-2xl font-bold mb-4">
           Contacts ({contacts.length})
@@ -551,39 +612,12 @@ export default function Page() {
       )}
 
       <div className="overflow-x-auto">
-        <table className="min-w-full bg-white text-center">
-          <thead>
-            <tr>
-              <th className="py-2 px-4 border-b">Name</th>
-              <th className="py-2 px-4 border-b">Email</th>
-              <th className="py-2 px-4 border-b">Phone</th>
-              <th className="py-2 px-4 border-b">WhatsApp</th>
-              <th className="py-2 px-4 border-b">Address</th>
-              <th className="py-2 px-4 border-b">Tags</th>
-              <th className="py-2 px-4 border-b">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {contacts.map((contact) => (
-              <tr key={contact.id}>
-                <td className="py-2 px-4 border-b">{contact.name}</td>
-                <td className="py-2 px-4 border-b">{contact.email}</td>
-                <td className="py-2 px-4 border-b">{contact.phone}</td>
-                <td className="py-2 px-4 border-b">{contact.whatsapp}</td>
-                <td className="py-2 px-4 border-b">{contact.address}</td>
-                <td className="py-2 px-4 border-b">{contact.tags}</td>
-                <td className="py-2 px-4 border-b">
-                  <button onClick={() => handleOpenDialog(contact)} className="text-blue-500 hover:text-blue-700 mr-2">
-                    <FaEdit />
-                  </button>
-                  <button onClick={() => handleDelete(contact.id!)} className="text-red-500 hover:text-red-700">
-                    <FaTrash />
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <DataTable
+          data={contacts}
+          columns={columns}
+          options={{ responsive: true, select: true }}
+          className="display"
+        />
       </div>
     </div>
   );
