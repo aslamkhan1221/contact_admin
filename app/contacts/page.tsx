@@ -1,11 +1,8 @@
 'use client';
 
 import { useState, useEffect, ChangeEvent, FormEvent, useRef } from 'react';
-import $ from 'jquery';
-import DataTable from 'datatables.net-react';
-import DataTables from 'datatables.net-dt';
-import 'datatables.net-dt/css/dataTables.dataTables.css';
-import 'datatables.net-responsive-dt/css/responsive.dataTables.css';
+import 'datatables.net-dt/css/dataTables.dataTables.css'; // Core CSS
+import 'datatables.net-responsive-dt/css/responsive.dataTables.css'; // Responsive CSS
 import 'datatables.net-select-dt/css/select.dataTables.css';
 import { FaEdit, FaTrash } from 'react-icons/fa';
 
@@ -39,8 +36,6 @@ interface ManualConflict {
   duplicate: Contact;
 }
 
-DataTable.use(DataTables);
-
 export default function Page() {
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [showDialog, setShowDialog] = useState(false);
@@ -65,6 +60,21 @@ export default function Page() {
   const [duplicateConflicts, setDuplicateConflicts] = useState<DuplicateConflict[]>([]);
   const [contactsToConfirm, setContactsToConfirm] = useState<Contact[]>([]);
   const [manualConflict, setManualConflict] = useState<ManualConflict | null>(null);
+  const [DataTableComponent, setDataTableComponent] = useState<React.ComponentType<any> | null>(null);
+
+  useEffect(() => {
+    // Dynamically import DataTable and its extensions only on the client-side
+    const loadDataTables = async () => {
+      const DataTableModule = (await import('datatables.net-react')).default;
+      const DataTables = (await import('datatables.net-dt')).default;
+      await import('datatables.net-responsive');
+      await import('datatables.net-select');
+      
+      DataTableModule.use(DataTables);
+      setDataTableComponent(() => DataTableModule);
+    };
+    loadDataTables();
+  }, []);
 
   const fetchContacts = async () => {
     try {
@@ -612,12 +622,17 @@ export default function Page() {
       )}
 
       <div className="overflow-x-auto">
-        <DataTable
-          data={contacts}
-          columns={columns}
-          options={{ responsive: true, select: true }}
-          className="display"
-        />
+        {DataTableComponent && (
+          <DataTableComponent
+            data={contacts}
+            columns={columns}
+            options={{
+              responsive: true,
+              select: true,
+            }}
+            className="display"
+          />
+        )}
       </div>
     </div>
   );

@@ -1,5 +1,4 @@
 'use server'
-'use server'
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '../../../lib/db';
 import * as xlsx from 'xlsx';
@@ -47,14 +46,33 @@ export async function POST(req: NextRequest) {
         tags: String(row[5] || ''),
       };
 
-      // Check for duplicates based on email, phone, or whatsapp
-      const { rows: existingRows } = await db.execute({
-        sql: 'SELECT * FROM contacts WHERE email = ? OR phone = ? OR whatsapp = ? LIMIT 1',
-        args: [contact.email, contact.phone, contact.whatsapp],
-      });
+      const conditions: string[] = [];
+      const args: string[] = [];
 
-      if (existingRows.length > 0) {
-        duplicateContacts.push({ new: contact, existing: existingRows[0] as any as Contact });
+      if (contact.email) {
+        conditions.push('email = ?');
+        args.push(contact.email);
+      }
+      if (contact.phone) {
+        conditions.push('phone = ?');
+        args.push(contact.phone);
+      }
+      if (contact.whatsapp) {
+        conditions.push('whatsapp = ?');
+        args.push(contact.whatsapp);
+      }
+
+      if (conditions.length > 0) {
+        const { rows: existingRows } = await db.execute({
+          sql: `SELECT * FROM contacts WHERE ${conditions.join(' OR ')} LIMIT 1`,
+          args: args,
+        });
+
+        if (existingRows.length > 0) {
+          duplicateContacts.push({ new: contact, existing: existingRows[0] as any as Contact });
+        } else {
+          newContacts.push(contact);
+        }
       } else {
         newContacts.push(contact);
       }
