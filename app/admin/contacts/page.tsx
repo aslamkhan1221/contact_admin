@@ -319,11 +319,13 @@ export default function Page() {
   };
 
   const handleConfirmImport = async (contactsToAdd: Contact[]) => {
+    const originalDuplicateCount = duplicateConflicts.length;
     setDuplicateConflicts([]);
     const finalContacts = [...contactsToConfirm, ...contactsToAdd];
 
     if (finalContacts.length === 0) {
       alert("No new contacts to import.");
+      setImportProgress({ inProgress: false, importedCount: 0, duplicateCount: 0, totalCount: 0, error: null });
       return;
     }
 
@@ -338,7 +340,13 @@ export default function Page() {
 
       if (response.ok) {
         const result = await response.json();
-        setImportProgress({ inProgress: false, importedCount: result.importedCount, duplicateCount: duplicateConflicts.length - contactsToAdd.length, totalCount: finalContacts.length + (duplicateConflicts.length - contactsToAdd.length), error: null });
+        setImportProgress({ 
+          inProgress: false, 
+          importedCount: result.importedCount, 
+          duplicateCount: originalDuplicateCount - contactsToAdd.length, 
+          totalCount: finalContacts.length + (originalDuplicateCount - contactsToAdd.length), 
+          error: null 
+        });
         fetchContacts();
       } else {
         throw new Error('Failed to confirm import');

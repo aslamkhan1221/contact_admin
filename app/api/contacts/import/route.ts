@@ -23,12 +23,26 @@ export async function POST(req: NextRequest) {
 
     const buffer = await file.arrayBuffer();
     const workbook = xlsx.read(buffer, { type: 'buffer' });
-    const sheetName = workbook.SheetNames[0];
-    const sheet = workbook.Sheets[sheetName];
+    let sheet;
+    if (workbook.SheetNames.includes('contacts')) {
+      sheet = workbook.Sheets['contacts'];
+    } else {
+      sheet = workbook.Sheets[workbook.SheetNames[0]];
+    }
     const data = xlsx.utils.sheet_to_json(sheet, { header: 1 }) as any[][];
 
     if (data.length < 2) { // must have header and at least one data row
       return NextResponse.json({ message: 'Sheet must have a header and at least one data row' }, { status: 400 });
+    }
+
+    const headerRow = data[0].map(header => String(header).toLowerCase().trim());
+    const headerMap: Record<string, number> = {};
+    headerRow.forEach((header, index) => {
+      headerMap[header] = index;
+    });
+
+    if (headerMap['name'] === undefined) {
+      return NextResponse.json({ message: 'Sheet must contain a \'name\' column' }, { status: 400 });
     }
 
     const newContacts: Contact[] = [];
@@ -37,14 +51,24 @@ export async function POST(req: NextRequest) {
     // Start from 1 to skip header row
     for (let i = 1; i < data.length; i++) {
       const row = data[i];
+
+      if (row.every(cell => cell === null || cell === undefined || String(cell).trim() === '')) {
+        continue;
+      }
+      
       const contact: Contact = {
-        name: String(row[0] || ''),
-        email: String(row[1] || ''),
-        phone: String(row[2] || ''),
-        whatsapp: String(row[3] || ''),
-        address: String(row[4] || ''),
-        tags: String(row[5] || ''),
+        name: String(row[headerMap['name']] || ''),
+        email: String(row[headerMap['email']] || ''),
+        phone: String(row[headerMap['phone']] || ''),
+        whatsapp: String(row[headerMap['whatsapp']] || ''),
+        address: String(row[headerMap['address']] || ''),
+        tags: String(row[headerMap['tags']] || ''),
       };
+
+      const isBlankContact = Object.values(contact).every(value => value === '');
+      if (isBlankContact) {
+        continue;
+      }
 
       const conditions: string[] = [];
       const args: string[] = [];
@@ -73,8 +97,6 @@ export async function POST(req: NextRequest) {
         } else {
           newContacts.push(contact);
         }
-      } else {
-        newContacts.push(contact);
       }
     }
 
